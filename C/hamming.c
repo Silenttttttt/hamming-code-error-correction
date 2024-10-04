@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
         // Encode the binary string
         char *encoded_string = (char *)malloc(input_len * 14 + 1);  // Rough estimate for encoded size
         encode_binary_string(binary_string, encoded_string);
-        printf("Encoded binary string: %s\n", encoded_string);
+        printf("%s\n", encoded_string);
 
         free(binary_string);
         free(encoded_string);
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
             decoded_text[i / 8] = (char)strtol(byte_str, NULL, 2);
         }
         decoded_text[corrected_len / 8] = '\0';
-        printf("Decoded text: %s\n", decoded_text);
+        printf("%s\n", decoded_text);
 
         free(corrected_string);
         free(decoded_text);
