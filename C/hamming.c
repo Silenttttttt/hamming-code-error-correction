@@ -94,58 +94,57 @@ void decode_binary_string(const char *encoded_string, char *decoded_string) {
     }
 }
 
-// Example usage
-int main() {
-    // Create a large message by repeating "Hello world!" 1000 times
-    char message[12001];  // 12 characters * 1000 + 1 for null terminator
-    message[0] = '\0';
-    for (int i = 0; i < 1000; i++) {
-        strcat(message, "Hello world!");
+// Main function for CLI tool
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <encode|decode> <string>\n", argv[0]);
+        return 1;
     }
 
-    // Convert the message to a binary string
-    char binary_string[96001] = "";  // 8 bits per character, 12000 characters
-    for (size_t i = 0; i < strlen(message); i++) {
-        char binary_char[9];
-        char_to_binary(message[i], binary_char);
-        strcat(binary_string, binary_char);
-    }
-    printf("Original binary string length: %zu\n", strlen(binary_string));
+    char *operation = argv[1];
+    char *input_string = argv[2];
 
-    // Encode the binary string
-    char encoded_string[168001];  // Rough estimate for encoded size
-    encode_binary_string(binary_string, encoded_string);
-    printf("Encoded binary string length: %zu\n", strlen(encoded_string));
+    if (strcmp(operation, "encode") == 0) {
+        // Convert the input string to a binary string
+        size_t input_len = strlen(input_string);
+        char *binary_string = (char *)malloc(input_len * 8 + 1);
+        binary_string[0] = '\0';
+        for (size_t i = 0; i < input_len; i++) {
+            char binary_char[9];
+            char_to_binary(input_string[i], binary_char);
+            strcat(binary_string, binary_char);
+        }
 
-    // Introduce an error in the encoded string
-    if (encoded_string[16] == '0') {
-        encoded_string[16] = '1';
+        // Encode the binary string
+        char *encoded_string = (char *)malloc(input_len * 14 + 1);  // Rough estimate for encoded size
+        encode_binary_string(binary_string, encoded_string);
+        printf("Encoded binary string: %s\n", encoded_string);
+
+        free(binary_string);
+        free(encoded_string);
+    } else if (strcmp(operation, "decode") == 0) {
+        // Decode the binary string
+        size_t input_len = strlen(input_string);
+        char *corrected_string = (char *)malloc(input_len / 7 * 4 + 1);
+        decode_binary_string(input_string, corrected_string);
+
+        // Convert the corrected binary string back to text
+        size_t corrected_len = strlen(corrected_string);
+        char *decoded_text = (char *)malloc(corrected_len / 8 + 1);
+        for (size_t i = 0; i < corrected_len; i += 8) {
+            char byte_str[9];
+            strncpy(byte_str, corrected_string + i, 8);
+            byte_str[8] = '\0';
+            decoded_text[i / 8] = (char)strtol(byte_str, NULL, 2);
+        }
+        decoded_text[corrected_len / 8] = '\0';
+        printf("Decoded text: %s\n", decoded_text);
+
+        free(corrected_string);
+        free(decoded_text);
     } else {
-        encoded_string[16] = '0';
-    }
-    printf("Encoded string with error introduced.\n");
-
-    // Decode and correct the error
-    char corrected_string[96001];
-    decode_binary_string(encoded_string, corrected_string);
-    printf("Corrected binary string length: %zu\n", strlen(corrected_string));
-
-    // Convert the corrected binary string back to text
-    char decoded_text[12001];
-    for (size_t i = 0; i < strlen(corrected_string); i += 8) {
-        char byte_str[9];
-        strncpy(byte_str, corrected_string + i, 8);
-        byte_str[8] = '\0';
-        decoded_text[i / 8] = (char)strtol(byte_str, NULL, 2);
-    }
-    decoded_text[12000] = '\0';
-    printf("Decoded text length: %zu\n", strlen(decoded_text));
-
-    // Check if the decoded text matches the original message
-    if (strcmp(decoded_text, message) == 0) {
-        printf("Decoded text matches the original message.\n");
-    } else {
-        printf("Decoded text does not match the original message.\n");
+        fprintf(stderr, "Invalid operation. Use 'encode' or 'decode'.\n");
+        return 1;
     }
 
     return 0;
