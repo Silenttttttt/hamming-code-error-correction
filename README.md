@@ -1,6 +1,6 @@
 # Hamming Code Error Correction
 
-This repository contains a Python implementation of the Hamming(7,4) code, which is used for error detection and correction in binary data. The project provides functions to encode binary strings using Hamming codes, detect and correct single-bit errors, and convert between binary strings and bytes. A special feature of this implementation is the automatic handling of padding to ensure data integrity during encoding and decoding, without having bother with the padding length to decode the data.
+This repository contains a Python, and a C implementation of the Hamming(7,4) code, which is used for error detection and correction in binary data. The project provides functions to encode binary strings using Hamming codes, detect and correct single-bit errors, and convert between binary strings and bytes. A special feature of this implementation is the automatic handling of padding to ensure data integrity during encoding and decoding, without having bother with the padding length to decode the data.
 
 ## Features
 
