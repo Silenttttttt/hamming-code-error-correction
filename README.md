@@ -1,6 +1,6 @@
 # Hamming Code Error Correction
 
-This repository contains a Python implementation of the Hamming(7,4) code, which is used for error detection and correction in binary data. The project provides functions to encode binary strings using Hamming codes, detect and correct single-bit errors, and convert between binary strings and bytes. A special feature of this implementation is the automatic handling of padding to ensure data integrity during encoding and decoding.
+This repository contains a Python implementation of the Hamming(7,4) code, which is used for error detection and correction in binary data. The project provides functions to encode binary strings using Hamming codes, detect and correct single-bit errors, and convert between binary strings and bytes. A special feature of this implementation is the automatic handling of padding to ensure data integrity during encoding and decoding, without having bother with the padding length to decode the data.
 
 ## Features
 
@@ -26,11 +26,24 @@ cd hamming-code-error-correction
 
 Run `python hamming.py` to see an example of the encoding and decoding:
 
-python hamming.py
-
 ### Example
 
 The script includes an example that encodes the string "Hello world!" into a binary string, introduces an error, and then decodes and corrects the error to retrieve the original message.
+
+
+## Automatic Padding Management
+
+In digital communication, data often needs to be aligned to specific bit lengths. The automatic padding feature in this implementation ensures that the binary data is correctly aligned for Hamming(7,4) encoding. Here's how it works:
+
+1. **Padding Calculation**: The algorithm calculates the number of padding bits required to make the length of the binary data a multiple of 4. This is necessary because Hamming(7,4) encoding operates on 4-bit blocks.
+
+2. **Padding Addition**: The calculated padding bits (zeros) are appended to the binary data. This ensures that the data can be divided into complete 4-bit blocks for encoding.
+
+3. **Padding Information Encoding**: The number of padding bits added is encoded as a 4-bit binary string, with the rightmost bit set to `1` as a marker. The preceding 3 bits represent the padding length.
+
+4. **Padding Removal**: During decoding, the padding information is extracted from the encoded data. The algorithm uses this information to remove the padding bits, restoring the original data length.
+
+This automatic padding management ensures that the data integrity is maintained throughout the encoding and decoding process, allowing for accurate error detection and correction.
 
 ## Functions
 
