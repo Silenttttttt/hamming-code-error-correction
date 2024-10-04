@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 // Function to convert a character to an 8-bit binary string
 void char_to_binary(char c, char *binary) {
@@ -96,13 +97,48 @@ void decode_binary_string(const char *encoded_string, char *decoded_string) {
 
 // Main function for CLI tool
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <encode|decode> <string>\n", argv[0]);
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <encode|decode> [data]\n", argv[0]);
         return 1;
     }
 
     char *operation = argv[1];
-    char *input_string = argv[2];
+    char *input_string = NULL;
+    size_t buffer_size = 1024;
+    size_t total_read = 0;
+    size_t bytes_read;
+
+    // Allocate initial buffer
+    input_string = malloc(buffer_size);
+    if (!input_string) {
+        fprintf(stderr, "Memory allocation failed\n");
+        return 1;
+    }
+
+    // Read from stdin if data is available
+    while ((bytes_read = fread(input_string + total_read, 1, buffer_size - total_read, stdin)) > 0) {
+        total_read += bytes_read;
+        // Reallocate buffer if necessary
+        if (total_read == buffer_size) {
+            buffer_size *= 2;
+            input_string = realloc(input_string, buffer_size);
+            if (!input_string) {
+                fprintf(stderr, "Memory reallocation failed\n");
+                return 1;
+            }
+        }
+    }
+
+    // Null-terminate the string
+    input_string[total_read] = '\0';
+
+    if (total_read == 0 && argc == 3) {
+        // Use command-line argument if no stdin input
+        input_string = argv[2];
+    } else if (total_read == 0) {
+        fprintf(stderr, "No input data provided.\n");
+        return 1;
+    }
 
     if (strcmp(operation, "encode") == 0) {
         // Convert the input string to a binary string
@@ -118,7 +154,7 @@ int main(int argc, char *argv[]) {
         // Encode the binary string
         char *encoded_string = (char *)malloc(input_len * 14 + 1);  // Rough estimate for encoded size
         encode_binary_string(binary_string, encoded_string);
-        printf("%s\n", encoded_string);
+        printf("%s", encoded_string);
 
         free(binary_string);
         free(encoded_string);
@@ -138,14 +174,16 @@ int main(int argc, char *argv[]) {
             decoded_text[i / 8] = (char)strtol(byte_str, NULL, 2);
         }
         decoded_text[corrected_len / 8] = '\0';
-        printf("%s\n", decoded_text);
+        printf("%s", decoded_text);
 
         free(corrected_string);
         free(decoded_text);
     } else {
         fprintf(stderr, "Invalid operation. Use 'encode' or 'decode'.\n");
+        free(input_string);
         return 1;
     }
 
+    free(input_string);
     return 0;
 }
