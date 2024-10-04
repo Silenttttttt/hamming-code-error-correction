@@ -18,10 +18,10 @@ This repository contains a Python implementation of the Hamming(7,4) code, which
 ### Installation
 
 Clone the repository to your local machine:
-
+```
 git clone https://github.com/Silenttttttt/hamming-code-error-correction.git
 cd hamming-code-error-correction
-
+```
 ### Usage
 
 Run `python hamming.py` to see an example of the encoding and decoding:
