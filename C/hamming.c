@@ -99,49 +99,42 @@ void decode_binary_string(const char *encoded_string, char *decoded_string) {
 
 // Main function for CLI tool
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
+    char *input_string = NULL;
+    size_t buffer_size = 1024;
+
+    if (argc == 3) {
+        input_string = argv[2];
+    } else if (argc == 2) {
+        // Allocate initial buffer
+        input_string = malloc(buffer_size);
+        if (!input_string) {
+            fprintf(stderr, "Memory allocation failed\n");
+            return 1;
+        }
+
+        // Read from stdin if data is available
+        size_t total_read = 0;
+        size_t bytes_read;
+        while ((bytes_read = fread(input_string + total_read, 1, buffer_size - total_read, stdin)) > 0) {
+            total_read += bytes_read;
+            // Reallocate buffer if necessary
+            if (total_read == buffer_size) {
+                buffer_size *= 2;
+                input_string = realloc(input_string, buffer_size);
+                if (!input_string) {
+                    fprintf(stderr, "Memory reallocation failed\n");
+                    return 1;
+                }
+            }
+        }
+        // Null-terminate the string
+        input_string[total_read] = '\0';
+    } else {
         fprintf(stderr, "Usage: %s <encode|decode> [data]\n", argv[0]);
         return 1;
     }
 
     char *operation = argv[1];
-    char *input_string = NULL;
-    size_t buffer_size = 1024;
-    size_t total_read = 0;
-    size_t bytes_read;
-
-    // Allocate initial buffer
-    input_string = malloc(buffer_size);
-    if (!input_string) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return 1;
-    }
-
-    // Read from stdin if data is available
-    while ((bytes_read = fread(input_string + total_read, 1, buffer_size - total_read, stdin)) > 0) {
-        total_read += bytes_read;
-        // Reallocate buffer if necessary
-        if (total_read == buffer_size) {
-            buffer_size *= 2;
-            input_string = realloc(input_string, buffer_size);
-            if (!input_string) {
-                fprintf(stderr, "Memory reallocation failed\n");
-                return 1;
-            }
-        }
-    }
-
-    // Null-terminate the string
-    input_string[total_read] = '\0';
-
-    if (total_read == 0 && argc == 3) {
-        // Use command-line argument if no stdin input
-        input_string = argv[2];
-    } else if (total_read == 0) {
-        fprintf(stderr, "No input data provided.\n");
-        free(input_string);
-        return 1;
-    }
 
     if (strcmp(operation, "encode") == 0) {
         // Convert the input string to a binary string
@@ -149,7 +142,7 @@ int main(int argc, char *argv[]) {
         char *binary_string = (char *)malloc(input_len * 8 + 1);
         if (!binary_string) {
             fprintf(stderr, "Memory allocation failed\n");
-            free(input_string);
+            if (argc == 2) free(input_string);
             return 1;
         }
         char *binary_ptr = binary_string;
@@ -161,17 +154,32 @@ int main(int argc, char *argv[]) {
         }
         *binary_ptr = '\0';
 
-        // Encode the binary string
-        char *encoded_string = (char *)malloc(input_len * 14 + 1);  // Rough estimate for encoded size
-        if (!encoded_string) {
+        // Calculate the correct size for the encoded string
+        size_t binary_len = strlen(binary_string);
+        size_t padded_len = ((binary_len + 3) / 4) * 4; // Ensure multiple of 4
+        char *padded_binary_string = (char *)malloc(padded_len + 1);
+        if (!padded_binary_string) {
             fprintf(stderr, "Memory allocation failed\n");
             free(binary_string);
-            free(input_string);
+            if (argc == 2) free(input_string);
             return 1;
         }
-        encode_binary_string(binary_string, encoded_string);
+        strcpy(padded_binary_string, binary_string);
+        memset(padded_binary_string + binary_len, '0', padded_len - binary_len);
+        padded_binary_string[padded_len] = '\0';
+
+        char *encoded_string = (char *)malloc(padded_len * 7 / 4 + 1);
+        if (!encoded_string) {
+            fprintf(stderr, "Memory allocation failed\n");
+            free(padded_binary_string);
+            free(binary_string);
+            if (argc == 2) free(input_string);
+            return 1;
+        }
+        encode_binary_string(padded_binary_string, encoded_string);
         printf("%s", encoded_string);
 
+        free(padded_binary_string);
         free(binary_string);
         free(encoded_string);
     } else if (strcmp(operation, "decode") == 0) {
@@ -180,7 +188,7 @@ int main(int argc, char *argv[]) {
         char *corrected_string = (char *)malloc(input_len / 7 * 4 + 1);
         if (!corrected_string) {
             fprintf(stderr, "Memory allocation failed\n");
-            free(input_string);
+            if (argc == 2) free(input_string);
             return 1;
         }
         decode_binary_string(input_string, corrected_string);
@@ -191,7 +199,7 @@ int main(int argc, char *argv[]) {
         if (!decoded_text) {
             fprintf(stderr, "Memory allocation failed\n");
             free(corrected_string);
-            free(input_string);
+            if (argc == 2) free(input_string);
             return 1;
         }
         char *decoded_ptr = decoded_text;
@@ -208,10 +216,10 @@ int main(int argc, char *argv[]) {
         free(decoded_text);
     } else {
         fprintf(stderr, "Invalid operation. Use 'encode' or 'decode'.\n");
-        free(input_string);
+        if (argc == 2) free(input_string);
         return 1;
     }
 
-    free(input_string);
+    if (argc == 2) free(input_string);
     return 0;
 }
