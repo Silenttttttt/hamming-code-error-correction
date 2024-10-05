@@ -64,12 +64,14 @@ void detect_and_correct_error(char *hamming_code) {
 void encode_binary_string(const char *data_bits, char *encoded_string) {
     size_t len = strlen(data_bits);
     char hamming_code[8];
-    encoded_string[0] = '\0';
+    char *encoded_ptr = encoded_string;
 
     for (size_t i = 0; i < len; i += 4) {
         generate_hamming_code(data_bits + i, hamming_code);
-        strcat(encoded_string, hamming_code);
+        memcpy(encoded_ptr, hamming_code, 7);
+        encoded_ptr += 7;
     }
+    *encoded_ptr = '\0';
 }
 
 // Function to decode a binary string encoded with Hamming(7,4) and correct errors
@@ -77,7 +79,7 @@ void decode_binary_string(const char *encoded_string, char *decoded_string) {
     size_t len = strlen(encoded_string);
     char hamming_code[8];
     char corrected_code[5];
-    decoded_string[0] = '\0';
+    char *decoded_ptr = decoded_string;
 
     for (size_t i = 0; i < len; i += 7) {
         strncpy(hamming_code, encoded_string + i, 7);
@@ -89,10 +91,10 @@ void decode_binary_string(const char *encoded_string, char *decoded_string) {
         corrected_code[1] = hamming_code[4];
         corrected_code[2] = hamming_code[5];
         corrected_code[3] = hamming_code[6];
-        corrected_code[4] = '\0';
-
-        strcat(decoded_string, corrected_code);
+        memcpy(decoded_ptr, corrected_code, 4);
+        decoded_ptr += 4;
     }
+    *decoded_ptr = '\0';
 }
 
 // Main function for CLI tool
@@ -137,6 +139,7 @@ int main(int argc, char *argv[]) {
         input_string = argv[2];
     } else if (total_read == 0) {
         fprintf(stderr, "No input data provided.\n");
+        free(input_string);
         return 1;
     }
 
@@ -144,15 +147,28 @@ int main(int argc, char *argv[]) {
         // Convert the input string to a binary string
         size_t input_len = strlen(input_string);
         char *binary_string = (char *)malloc(input_len * 8 + 1);
-        binary_string[0] = '\0';
+        if (!binary_string) {
+            fprintf(stderr, "Memory allocation failed\n");
+            free(input_string);
+            return 1;
+        }
+        char *binary_ptr = binary_string;
         for (size_t i = 0; i < input_len; i++) {
             char binary_char[9];
             char_to_binary(input_string[i], binary_char);
-            strcat(binary_string, binary_char);
+            memcpy(binary_ptr, binary_char, 8);
+            binary_ptr += 8;
         }
+        *binary_ptr = '\0';
 
         // Encode the binary string
         char *encoded_string = (char *)malloc(input_len * 14 + 1);  // Rough estimate for encoded size
+        if (!encoded_string) {
+            fprintf(stderr, "Memory allocation failed\n");
+            free(binary_string);
+            free(input_string);
+            return 1;
+        }
         encode_binary_string(binary_string, encoded_string);
         printf("%s", encoded_string);
 
@@ -162,18 +178,30 @@ int main(int argc, char *argv[]) {
         // Decode the binary string
         size_t input_len = strlen(input_string);
         char *corrected_string = (char *)malloc(input_len / 7 * 4 + 1);
+        if (!corrected_string) {
+            fprintf(stderr, "Memory allocation failed\n");
+            free(input_string);
+            return 1;
+        }
         decode_binary_string(input_string, corrected_string);
 
         // Convert the corrected binary string back to text
         size_t corrected_len = strlen(corrected_string);
         char *decoded_text = (char *)malloc(corrected_len / 8 + 1);
+        if (!decoded_text) {
+            fprintf(stderr, "Memory allocation failed\n");
+            free(corrected_string);
+            free(input_string);
+            return 1;
+        }
+        char *decoded_ptr = decoded_text;
         for (size_t i = 0; i < corrected_len; i += 8) {
             char byte_str[9];
             strncpy(byte_str, corrected_string + i, 8);
             byte_str[8] = '\0';
-            decoded_text[i / 8] = (char)strtol(byte_str, NULL, 2);
+            *decoded_ptr++ = (char)strtol(byte_str, NULL, 2);
         }
-        decoded_text[corrected_len / 8] = '\0';
+        *decoded_ptr = '\0';
         printf("%s", decoded_text);
 
         free(corrected_string);
