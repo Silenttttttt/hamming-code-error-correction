@@ -13,7 +13,9 @@ This repository contains a Python, and a C implementation of the Hamming(7,4) co
 
 ### Prerequisites
 
-- Python 3.x
+- Python 3.x (For the python implementation)
+
+
 
 ### Installation
 
